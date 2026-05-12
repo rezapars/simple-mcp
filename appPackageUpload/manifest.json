@@ -1,7 +1,7 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/teams/v1.22/MicrosoftTeams.schema.json",
   "manifestVersion": "1.22",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "id": "98731111-1111-1111-1111-111111111111",
   "developer": {
     "name": "Reza",
@@ -14,8 +14,8 @@
     "full": "Rabo Client Assistant"
   },
   "description": {
-    "short": "Client onboarding MCP tools.",
-    "full": "A sample Microsoft Teams and Microsoft 365 Copilot app package that connects to a Python MCP server for client onboarding status and basic client information."
+    "short": "Client onboarding, facility, and outreach tools.",
+    "full": "A sample Microsoft Teams and Microsoft 365 Copilot app package that connects to a Python MCP server for client onboarding status, basic client information, facility limits, and outreach highlights."
   },
   "icons": {
     "outline": "outline.png",

@@ -5,7 +5,9 @@ from mcp_server.errors import ToolExecutionError
 from mcp_server.models import (
     BasicInfoField,
     BasicInfoResponse,
+    ClientFacilityResponse,
     OnboardingStatusResponse,
+    OutreachSummaryResponse,
     ToolListResponse,
 )
 from mcp_server.tool_registry import list_tools
@@ -67,6 +69,50 @@ async def get_client_basic_info(
         raise ToolExecutionError(
             code=getattr(exc, "code", "backend_error"),
             message=getattr(exc, "message", "Failed to get client basic info."),
+            status_code=getattr(exc, "status_code", 502),
+            details=getattr(exc, "details", None),
+        ) from exc
+
+
+@router.get(
+    "/clients/{client_id}/facility",
+    response_model=ClientFacilityResponse,
+    tags=["client-tools"],
+    operation_id="get_client_facility_limit",
+    summary="Get client facility limit",
+)
+async def get_client_facility_limit(
+    client_id: str = Path(..., min_length=1, description="Client identifier."),
+    backend_client: BackendClient = Depends(get_backend_client),
+) -> ClientFacilityResponse:
+    try:
+        return await backend_client.get_client_facility(client_id)
+    except Exception as exc:
+        raise ToolExecutionError(
+            code=getattr(exc, "code", "backend_error"),
+            message=getattr(exc, "message", "Failed to get client facility limit."),
+            status_code=getattr(exc, "status_code", 502),
+            details=getattr(exc, "details", None),
+        ) from exc
+
+
+@router.get(
+    "/clients/{client_id}/outreach-summary",
+    response_model=OutreachSummaryResponse,
+    tags=["client-tools"],
+    operation_id="summarize_client_outreach",
+    summary="Summarize client outreach",
+)
+async def summarize_client_outreach(
+    client_id: str = Path(..., min_length=1, description="Client identifier."),
+    backend_client: BackendClient = Depends(get_backend_client),
+) -> OutreachSummaryResponse:
+    try:
+        return await backend_client.summarize_client_outreach(client_id)
+    except Exception as exc:
+        raise ToolExecutionError(
+            code=getattr(exc, "code", "backend_error"),
+            message=getattr(exc, "message", "Failed to summarize client outreach."),
             status_code=getattr(exc, "status_code", 502),
             details=getattr(exc, "details", None),
         ) from exc

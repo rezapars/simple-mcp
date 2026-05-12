@@ -3,8 +3,8 @@
   "schema_version": "v2.4",
   "name_for_human": "Rabo Client Assistant",
   "namespace": "RaboClientAssistantRest",
-  "description_for_human": "Get client onboarding and name details.",
-  "description_for_model": "REST/OpenAPI fallback plugin for retrieving client onboarding status, first name, and family name by client ID. Use only API response data.",
+  "description_for_human": "Get client onboarding, facility limit, and outreach details.",
+  "description_for_model": "REST/OpenAPI fallback plugin for retrieving client onboarding status, first name, family name, current facility limit, and outreach summary by client ID. Use only API response data.",
   "contact_email": "support@example.com",
   "privacy_policy_url": "https://example.com/privacy",
   "legal_info_url": "https://example.com/terms",
@@ -26,6 +26,24 @@
           "data_handling": ["GetPrivateData"]
         }
       }
+    },
+    {
+      "name": "get_client_facility_limit",
+      "description": "Returns the client's name and current facility limit in EUR.",
+      "capabilities": {
+        "security_info": {
+          "data_handling": ["GetPrivateData"]
+        }
+      }
+    },
+    {
+      "name": "summarize_client_outreach",
+      "description": "Returns outreach highlights for a client, including reasons and total questions to answer.",
+      "capabilities": {
+        "security_info": {
+          "data_handling": ["GetPrivateData"]
+        }
+      }
     }
   ],
   "runtimes": [
@@ -36,7 +54,9 @@
       },
       "run_for_functions": [
         "get_client_onboarding_status",
-        "get_client_basic_info"
+        "get_client_basic_info",
+        "get_client_facility_limit",
+        "summarize_client_outreach"
       ],
       "spec": {
         "url": "openapi.yaml",

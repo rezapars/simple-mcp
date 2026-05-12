@@ -5,7 +5,13 @@ import httpx
 from pydantic import BaseModel
 
 from mcp_server.errors import BackendClientError
-from mcp_server.models import BasicInfoField, BasicInfoResponse, OnboardingStatusResponse
+from mcp_server.models import (
+    BasicInfoField,
+    BasicInfoResponse,
+    ClientFacilityResponse,
+    OnboardingStatusResponse,
+    OutreachSummaryResponse,
+)
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 
@@ -33,6 +39,14 @@ class BackendClient:
     async def get_basic_info(self, client_id: str, field: BasicInfoField) -> BasicInfoResponse:
         response = await self._get(f"/info/{client_id}/{field.value}")
         return self._parse_response(response, BasicInfoResponse)
+
+    async def get_client_facility(self, client_id: str) -> ClientFacilityResponse:
+        response = await self._get(f"/facility/{client_id}")
+        return self._parse_response(response, ClientFacilityResponse)
+
+    async def summarize_client_outreach(self, client_id: str) -> OutreachSummaryResponse:
+        response = await self._get(f"/outreach/{client_id}/summary")
+        return self._parse_response(response, OutreachSummaryResponse)
 
     async def health(self) -> dict[str, str]:
         response = await self._get("/health")

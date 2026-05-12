@@ -2,7 +2,7 @@
 
 Minimal Python 3.12 project with:
 
-- MCP server with two tools
+- MCP server with four tools
 - Separate mock backend server
 - REST/OpenAPI facade
 - Microsoft 365 Copilot plugin package files
@@ -47,7 +47,9 @@ Architecture:
 |       |-- basic_info_family.json
 |       |-- basic_info_name.json
 |       |-- error_invalid_field.json
-|       `-- onboarding_status.json
+|       |-- facility_limit.json
+|       |-- onboarding_status.json
+|       `-- outreach_summary.json
 |-- mcp_server/
 |   |-- __init__.py
 |   |-- __main__.py
@@ -88,7 +90,7 @@ Architecture:
 
 ## Tools
 
-The MCP exposes only these two tools.
+The MCP exposes these four tools.
 
 ### get_client_onboarding_status
 
@@ -144,6 +146,51 @@ Output:
 }
 ```
 
+### get_client_facility_limit
+
+Input:
+
+```json
+{
+  "client_id": "123"
+}
+```
+
+Output:
+
+```json
+{
+  "client_id": "123",
+  "client_name": "John Doe",
+  "facility_limit_eur": 75000000,
+  "currency": "EUR",
+  "formatted_limit": "EUR 75,000,000"
+}
+```
+
+### summarize_client_outreach
+
+Input:
+
+```json
+{
+  "client_id": "123"
+}
+```
+
+Output includes the outreach reasons, highlights, and total questions to answer:
+
+```json
+{
+  "client_id": "123",
+  "client_name": "John Doe",
+  "outreach_count": 2,
+  "questions_to_answer_count": 5,
+  "reasons": ["Annual facility review", "Updated cash-flow forecast"],
+  "summary": "John Doe has 2 outreach items. Reasons: Annual facility review, Updated cash-flow forecast. You should answer 5 questions in total."
+}
+```
+
 ## Local Setup
 
 Use Python 3.12.
@@ -188,6 +235,8 @@ Endpoints:
 curl http://localhost:8000/api/v1/clients/123/onboarding-status
 curl http://localhost:8000/api/v1/clients/123/basic-info/name
 curl http://localhost:8000/api/v1/clients/123/basic-info/family
+curl http://localhost:8000/api/v1/clients/123/facility
+curl http://localhost:8000/api/v1/clients/123/outreach-summary
 ```
 
 ## MCP JSON-RPC
@@ -222,6 +271,8 @@ The mock backend is a separate FastAPI service and returns hardcoded data only.
 curl http://localhost:8001/status/123
 curl http://localhost:8001/info/123/name
 curl http://localhost:8001/info/123/family
+curl http://localhost:8001/facility/123
+curl http://localhost:8001/outreach/123/summary
 ```
 
 ## Authentication Placeholder
@@ -274,7 +325,7 @@ Package files are in `appPackage/`.
 
 Before packaging:
 
-1. Replace `https://example.ngrok-free.app` in `appPackage/plugin.json`, `appPackage/openapi.yaml`, and `appPackage/manifest.json`.
+1. Replace the hosted domain in `appPackage/plugin.json`, `appPackage/openapi.yaml`, and `appPackage/manifest.json` if you move away from the current Railway URL.
 2. Replace the GUIDs in `appPackage/manifest.json` with real Microsoft Entra app and bot registration IDs.
 3. Zip the contents of `appPackage/`, not the folder itself.
 4. Upload the zip in Teams Developer Portal or Microsoft 365 Agents Toolkit.
@@ -285,6 +336,8 @@ Example Copilot prompts:
 - What is the client's name?
 - What is the client's family name?
 - For client 123, get the family field
+- What is the current limit on my company's facility for client 123?
+- Summarize the outreach highlights for client 123
 
 ## Teams Local Testing
 
@@ -296,7 +349,7 @@ ngrok http 8000
 ```
 
 3. Copy the HTTPS ngrok domain, for example `https://abc123.ngrok-free.app`.
-4. Replace `example.ngrok-free.app` in `appPackage/manifest.json`, `appPackage/plugin.json`, and `appPackage/openapi.yaml`.
+4. Replace the hosted domain in `appPackage/manifest.json`, `appPackage/plugin.json`, and `appPackage/openapi.yaml`.
 5. In Microsoft Entra ID, create or reuse an app registration for the Teams bot placeholder.
 6. In Azure Bot Service or Bot Framework registration, set the messaging endpoint to your bot endpoint if you add a real Teams bot implementation.
 7. In Teams Developer Portal, import the app package zip.

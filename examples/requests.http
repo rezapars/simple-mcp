@@ -13,6 +13,12 @@ GET http://localhost:8000/api/v1/clients/123/basic-info/name
 ### REST tool 2 - family
 GET http://localhost:8000/api/v1/clients/123/basic-info/family
 
+### REST tool 3 - facility limit
+GET http://localhost:8000/api/v1/clients/123/facility
+
+### REST tool 4 - outreach summary
+GET http://localhost:8000/api/v1/clients/123/outreach-summary
+
 ### MCP tools/list
 POST http://localhost:8000/mcp
 Content-Type: application/json
@@ -36,6 +42,38 @@ Content-Type: application/json
     "arguments": {
       "client_id": "123",
       "field": "name"
+    }
+  }
+}
+
+### MCP tools/call - facility limit
+POST http://localhost:8000/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "get_client_facility_limit",
+    "arguments": {
+      "client_id": "123"
+    }
+  }
+}
+
+### MCP tools/call - outreach summary
+POST http://localhost:8000/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "name": "summarize_client_outreach",
+    "arguments": {
+      "client_id": "123"
     }
   }
 }

@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Client Onboarding MCP REST API
   version: 1.0.0
-  description: REST facade for two client onboarding tools exposed by the MCP server.
+  description: REST facade for client onboarding, basic info, facility limit, and outreach tools exposed by the MCP server.
 servers:
   - url: https://example.ngrok-free.app
     description: Replace with your HTTPS tunnel or hosted endpoint
@@ -51,6 +51,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicInfoResponse"
+  /api/v1/clients/{client_id}/facility:
+    get:
+      operationId: get_client_facility_limit
+      summary: Get client facility limit
+      x-oai-isConsequential: false
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Client facility limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClientFacilityResponse"
+  /api/v1/clients/{client_id}/outreach-summary:
+    get:
+      operationId: summarize_client_outreach
+      summary: Summarize client outreach
+      x-oai-isConsequential: false
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Client outreach summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OutreachSummaryResponse"
 components:
   schemas:
     OnboardingStatusResponse:
@@ -74,3 +112,61 @@ components:
           enum: [name, family]
         value:
           type: string
+    ClientFacilityResponse:
+      type: object
+      required: [client_id, client_name, facility_limit_eur, currency, formatted_limit]
+      properties:
+        client_id:
+          type: string
+        client_name:
+          type: string
+        facility_limit_eur:
+          type: integer
+          minimum: 1000000
+          maximum: 200000000
+        currency:
+          type: string
+        formatted_limit:
+          type: string
+    OutreachItem:
+      type: object
+      required: [outreach_id, date, channel, reason, questions_to_answer]
+      properties:
+        outreach_id:
+          type: string
+        date:
+          type: string
+        channel:
+          type: string
+        reason:
+          type: string
+        questions_to_answer:
+          type: array
+          items:
+            type: string
+    OutreachSummaryResponse:
+      type: object
+      required: [client_id, client_name, outreach_count, questions_to_answer_count, reasons, highlights, summary, outreaches]
+      properties:
+        client_id:
+          type: string
+        client_name:
+          type: string
+        outreach_count:
+          type: integer
+        questions_to_answer_count:
+          type: integer
+        reasons:
+          type: array
+          items:
+            type: string
+        highlights:
+          type: array
+          items:
+            type: string
+        summary:
+          type: string
+        outreaches:
+          type: array
+          items:
+            $ref: "#/components/schemas/OutreachItem"

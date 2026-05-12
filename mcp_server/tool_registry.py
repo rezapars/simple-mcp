@@ -6,7 +6,12 @@ from pydantic import ValidationError
 
 from mcp_server.backend_client import BackendClient
 from mcp_server.errors import BackendClientError, ToolExecutionError
-from mcp_server.models import BasicInfoArguments, OnboardingStatusArguments
+from mcp_server.models import (
+    BasicInfoArguments,
+    ClientFacilityArguments,
+    OnboardingStatusArguments,
+    OutreachSummaryArguments,
+)
 
 
 TOOLS: list[dict[str, Any]] = [
@@ -47,6 +52,41 @@ TOOLS: list[dict[str, Any]] = [
             "additionalProperties": False,
         },
     },
+    {
+        "name": "get_client_facility_limit",
+        "description": "Get the current facility limit in EUR and client name for a client ID.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "type": "string",
+                    "description": "Client identifier, for example 123.",
+                    "minLength": 1,
+                }
+            },
+            "required": ["client_id"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "summarize_client_outreach",
+        "description": (
+            "Summarize outreach highlights for a client, including outreach reasons "
+            "and how many questions should be answered."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "client_id": {
+                    "type": "string",
+                    "description": "Client identifier, for example 123.",
+                    "minLength": 1,
+                }
+            },
+            "required": ["client_id"],
+            "additionalProperties": False,
+        },
+    },
 ]
 
 
@@ -70,6 +110,16 @@ async def call_tool(
         if name == "get_client_basic_info":
             parsed = BasicInfoArguments.model_validate(arguments)
             result = await backend_client.get_basic_info(parsed.client_id, parsed.field)
+            return result.model_dump(mode="json")
+
+        if name == "get_client_facility_limit":
+            parsed = ClientFacilityArguments.model_validate(arguments)
+            result = await backend_client.get_client_facility(parsed.client_id)
+            return result.model_dump(mode="json")
+
+        if name == "summarize_client_outreach":
+            parsed = OutreachSummaryArguments.model_validate(arguments)
+            result = await backend_client.summarize_client_outreach(parsed.client_id)
             return result.model_dump(mode="json")
 
     except ValidationError as exc:

@@ -60,3 +60,35 @@ Call `get_client_basic_info`:
   }
 }
 ```
+
+Call `get_client_facility_limit`:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "tools/call",
+  "params": {
+    "name": "get_client_facility_limit",
+    "arguments": {
+      "client_id": "123"
+    }
+  }
+}
+```
+
+Call `summarize_client_outreach`:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 6,
+  "method": "tools/call",
+  "params": {
+    "name": "summarize_client_outreach",
+    "arguments": {
+      "client_id": "123"
+    }
+  }
+}
+```

@@ -3,8 +3,8 @@
   "schema_version": "v2.4",
   "name_for_human": "Rabo Client Assistant",
   "namespace": "RaboClientAssistant",
-  "description_for_human": "Get client onboarding and name details.",
-  "description_for_model": "Use this plugin when the user asks for a client's onboarding status, first name, or family name. The user must provide a client ID. Use only the tool response data and do not invent client information.",
+  "description_for_human": "Get client onboarding, facility limit, and outreach details.",
+  "description_for_model": "Use this plugin when the user asks for a client's onboarding status, first name, family name, current facility limit, or outreach highlights. The user must provide a client ID. Use only the tool response data and do not invent client information.",
   "contact_email": "support@example.com",
   "privacy_policy_url": "https://example.com/privacy",
   "legal_info_url": "https://example.com/terms",
@@ -59,6 +59,52 @@
           "data_handling": ["GetPrivateData"]
         }
       }
+    },
+    {
+      "name": "get_client_facility_limit",
+      "description": "Returns the client's name and current facility limit in EUR.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "description": "Client identifier, for example 123."
+          }
+        },
+        "required": ["client_id"]
+      },
+      "returns": {
+        "type": "string",
+        "description": "A JSON object with client_id, client_name, facility_limit_eur, currency, and formatted_limit."
+      },
+      "capabilities": {
+        "security_info": {
+          "data_handling": ["GetPrivateData"]
+        }
+      }
+    },
+    {
+      "name": "summarize_client_outreach",
+      "description": "Returns outreach highlights for a client, including reasons and total questions to answer.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "description": "Client identifier, for example 123."
+          }
+        },
+        "required": ["client_id"]
+      },
+      "returns": {
+        "type": "string",
+        "description": "A JSON object with client_id, client_name, outreach_count, questions_to_answer_count, reasons, highlights, summary, and outreaches."
+      },
+      "capabilities": {
+        "security_info": {
+          "data_handling": ["GetPrivateData"]
+        }
+      }
     }
   ],
   "runtimes": [
@@ -69,7 +115,9 @@
       },
       "run_for_functions": [
         "get_client_onboarding_status",
-        "get_client_basic_info"
+        "get_client_basic_info",
+        "get_client_facility_limit",
+        "summarize_client_outreach"
       ],
       "spec": {
         "url": "https://simple-mcp-production-5bc1.up.railway.app/mcp",
@@ -111,6 +159,38 @@
                 "required": ["client_id", "field"],
                 "additionalProperties": false
               }
+            },
+            {
+              "name": "get_client_facility_limit",
+              "description": "Get the current facility limit in EUR and client name for a client ID.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "client_id": {
+                    "type": "string",
+                    "description": "Client identifier, for example 123.",
+                    "minLength": 1
+                  }
+                },
+                "required": ["client_id"],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "summarize_client_outreach",
+              "description": "Summarize outreach highlights for a client, including outreach reasons and how many questions should be answered.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "client_id": {
+                    "type": "string",
+                    "description": "Client identifier, for example 123.",
+                    "minLength": 1
+                  }
+                },
+                "required": ["client_id"],
+                "additionalProperties": false
+              }
             }
           ]
         }
@@ -130,6 +210,14 @@
       {
         "title": "Client family name",
         "text": "What is the client's family name?"
+      },
+      {
+        "title": "Facility limit",
+        "text": "What is the current limit on my company's facility for client 123?"
+      },
+      {
+        "title": "Outreach highlights",
+        "text": "Summarize the outreach highlights for client 123"
       }
     ]
   }
