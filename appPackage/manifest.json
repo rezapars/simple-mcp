@@ -22,6 +22,16 @@
     "color": "color.png"
   },
   "accentColor": "#2563EB",
+  "staticTabs": [
+    {
+      "entityId": "clientMcpPersonal",
+      "name": "Client MCP",
+      "contentUrl": "https://simple-mcp-production-5bc1.up.railway.app/docs",
+      "websiteUrl": "https://simple-mcp-production-5bc1.up.railway.app/docs",
+      "scopes": ["personal"],
+      "context": ["personalTab"]
+    }
+  ],
   "validDomains": ["simple-mcp-production-5bc1.up.railway.app"],
   "copilotAgents": {
     "declarativeAgents": [
