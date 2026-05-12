@@ -10,8 +10,8 @@
     "termsOfUseUrl": "https://example.com/terms"
   },
   "name": {
-    "short": "Client MCP",
-    "full": "Client Onboarding MCP for Teams and Copilot"
+    "short": "Rabo Client Assistant",
+    "full": "Rabo Client Assistant"
   },
   "description": {
     "short": "Client onboarding MCP tools.",
@@ -25,7 +25,7 @@
   "staticTabs": [
     {
       "entityId": "clientMcpPersonal",
-      "name": "Client MCP",
+      "name": "Rabo Client Assistant",
       "contentUrl": "https://simple-mcp-production-5bc1.up.railway.app/docs",
       "websiteUrl": "https://simple-mcp-production-5bc1.up.railway.app/docs",
       "scopes": ["personal"],

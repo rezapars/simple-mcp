@@ -1,8 +1,8 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/copilot/plugin/v2.4/schema.json",
   "schema_version": "v2.4",
-  "name_for_human": "Client MCP",
-  "namespace": "ClientMCP",
+  "name_for_human": "Rabo Client Assistant",
+  "namespace": "W&R",
   "description_for_human": "Get client onboarding and name details.",
   "description_for_model": "Use this plugin when the user asks for a client's onboarding status, first name, or family name. The user must provide a client ID. Use only the tool response data and do not invent client information.",
   "contact_email": "support@example.com",
