@@ -1,0 +1,20 @@
+services:
+  mock-backend:
+    build: .
+    command: uvicorn mock_backend.app:app --host 0.0.0.0 --port 8001
+    environment:
+      BACKEND_LOG_LEVEL: INFO
+    ports:
+      - "8001:8001"
+
+  mcp-server:
+    build: .
+    command: uvicorn mcp_server.app:app --host 0.0.0.0 --port 8000
+    environment:
+      MCP_BACKEND_BASE_URL: http://mock-backend:8001
+      MCP_AUTH_REQUIRED: "false"
+      MCP_LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    depends_on:
+      - mock-backend

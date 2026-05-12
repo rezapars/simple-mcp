@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "validation_error",
+    "message": "Request validation failed.",
+    "details": []
+  }
+}

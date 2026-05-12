@@ -1,0 +1,33 @@
+{
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "type": "AdaptiveCard",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "TextBlock",
+      "text": "Client result",
+      "weight": "Bolder"
+    },
+    {
+      "type": "FactSet",
+      "facts": [
+        {
+          "title": "Client ID",
+          "value": "${client_id}"
+        },
+        {
+          "title": "Status",
+          "value": "${status}"
+        },
+        {
+          "title": "Field",
+          "value": "${field}"
+        },
+        {
+          "title": "Value",
+          "value": "${value}"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/copilot/plugin/v2.4/schema.json",
+  "schema_version": "v2.4",
+  "name_for_human": "Client REST",
+  "namespace": "ClientREST",
+  "description_for_human": "Get client onboarding and name details.",
+  "description_for_model": "REST/OpenAPI fallback plugin for retrieving client onboarding status, first name, and family name by client ID. Use only API response data.",
+  "contact_email": "support@example.com",
+  "privacy_policy_url": "https://example.com/privacy",
+  "legal_info_url": "https://example.com/terms",
+  "functions": [
+    {
+      "name": "get_client_onboarding_status",
+      "description": "Returns the onboarding status and message for a client ID.",
+      "capabilities": {
+        "confirmation": {
+          "type": "None",
+          "isNonConsequential": true
+        },
+        "security_info": {
+          "data_handling": ["GetPrivateData"]
+        }
+      }
+    },
+    {
+      "name": "get_client_basic_info",
+      "description": "Returns either the name or family value for a client ID.",
+      "capabilities": {
+        "confirmation": {
+          "type": "None",
+          "isNonConsequential": true
+        },
+        "security_info": {
+          "data_handling": ["GetPrivateData"]
+        }
+      }
+    }
+  ],
+  "runtimes": [
+    {
+      "type": "OpenApi",
+      "auth": {
+        "type": "None"
+      },
+      "run_for_functions": [
+        "get_client_onboarding_status",
+        "get_client_basic_info"
+      ],
+      "spec": {
+        "url": "openapi.yaml",
+        "progress_style": "ShowUsageWithInput"
+      }
+    }
+  ]
+}

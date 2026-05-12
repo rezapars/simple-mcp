@@ -1,0 +1,76 @@
+openapi: 3.1.0
+info:
+  title: Client Onboarding MCP REST API
+  version: 1.0.0
+  description: REST facade for two client onboarding tools exposed by the MCP server.
+servers:
+  - url: https://example.ngrok-free.app
+    description: Replace with your HTTPS tunnel or hosted endpoint
+paths:
+  /api/v1/clients/{client_id}/onboarding-status:
+    get:
+      operationId: get_client_onboarding_status
+      summary: Get client onboarding status
+      x-oai-isConsequential: false
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Client onboarding status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStatusResponse"
+  /api/v1/clients/{client_id}/basic-info/{field}:
+    get:
+      operationId: get_client_basic_info
+      summary: Get client basic info
+      x-oai-isConsequential: false
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+        - name: field
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [name, family]
+      responses:
+        "200":
+          description: Client basic info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicInfoResponse"
+components:
+  schemas:
+    OnboardingStatusResponse:
+      type: object
+      required: [client_id, status, message]
+      properties:
+        client_id:
+          type: string
+        status:
+          type: string
+        message:
+          type: string
+    BasicInfoResponse:
+      type: object
+      required: [client_id, field, value]
+      properties:
+        client_id:
+          type: string
+        field:
+          type: string
+          enum: [name, family]
+        value:
+          type: string

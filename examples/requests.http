@@ -1,0 +1,41 @@
+### Health
+GET http://localhost:8000/health
+
+### Tool metadata
+GET http://localhost:8000/api/v1/tools
+
+### REST tool 1
+GET http://localhost:8000/api/v1/clients/123/onboarding-status
+
+### REST tool 2 - name
+GET http://localhost:8000/api/v1/clients/123/basic-info/name
+
+### REST tool 2 - family
+GET http://localhost:8000/api/v1/clients/123/basic-info/family
+
+### MCP tools/list
+POST http://localhost:8000/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 1,
+  "method": "tools/list"
+}
+
+### MCP tools/call
+POST http://localhost:8000/mcp
+Content-Type: application/json
+
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "get_client_basic_info",
+    "arguments": {
+      "client_id": "123",
+      "field": "name"
+    }
+  }
+}

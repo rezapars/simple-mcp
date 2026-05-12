@@ -1,0 +1,144 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/copilot/plugin/v2.4/schema.json",
+  "schema_version": "v2.4",
+  "name_for_human": "Client MCP",
+  "namespace": "ClientMCP",
+  "description_for_human": "Get client onboarding and name details.",
+  "description_for_model": "Use this plugin when the user asks for a client's onboarding status, first name, or family name. The user must provide a client ID. Use only the tool response data and do not invent client information.",
+  "contact_email": "support@example.com",
+  "privacy_policy_url": "https://example.com/privacy",
+  "legal_info_url": "https://example.com/terms",
+  "functions": [
+    {
+      "name": "get_client_onboarding_status",
+      "description": "Returns the onboarding status and message for a client ID.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "description": "Client identifier, for example 123."
+          }
+        },
+        "required": ["client_id"]
+      },
+      "returns": {
+        "type": "string",
+        "description": "A JSON object with client_id, status, and message."
+      },
+      "capabilities": {
+        "confirmation": {
+          "type": "None",
+          "isNonConsequential": true
+        },
+        "security_info": {
+          "data_handling": ["GetPrivateData"]
+        }
+      }
+    },
+    {
+      "name": "get_client_basic_info",
+      "description": "Returns either the name or family value for a client ID.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "description": "Client identifier, for example 123."
+          },
+          "field": {
+            "type": "string",
+            "description": "The basic info field to retrieve.",
+            "enum": ["name", "family"]
+          }
+        },
+        "required": ["client_id", "field"]
+      },
+      "returns": {
+        "type": "string",
+        "description": "A JSON object with client_id, field, and value."
+      },
+      "capabilities": {
+        "confirmation": {
+          "type": "None",
+          "isNonConsequential": true
+        },
+        "security_info": {
+          "data_handling": ["GetPrivateData"]
+        }
+      }
+    }
+  ],
+  "runtimes": [
+    {
+      "type": "RemoteMCPServer",
+      "auth": {
+        "type": "None"
+      },
+      "run_for_functions": [
+        "get_client_onboarding_status",
+        "get_client_basic_info"
+      ],
+      "spec": {
+        "url": "https://example.ngrok-free.app/mcp",
+        "mcp_tool_description": {
+          "tools": [
+            {
+              "name": "get_client_onboarding_status",
+              "description": "Get the onboarding status for a client by client ID.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "client_id": {
+                    "type": "string",
+                    "description": "Client identifier, for example 123.",
+                    "minLength": 1
+                  }
+                },
+                "required": ["client_id"],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "get_client_basic_info",
+              "description": "Get a client's basic name or family value by client ID.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
+                  "client_id": {
+                    "type": "string",
+                    "description": "Client identifier, for example 123.",
+                    "minLength": 1
+                  },
+                  "field": {
+                    "type": "string",
+                    "description": "Basic info field to retrieve.",
+                    "enum": ["name", "family"]
+                  }
+                },
+                "required": ["client_id", "field"],
+                "additionalProperties": false
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "capabilities": {
+    "conversation_starters": [
+      {
+        "title": "Onboarding status",
+        "text": "Get onboarding status for client 123"
+      },
+      {
+        "title": "Client name",
+        "text": "What is the client's name?"
+      },
+      {
+        "title": "Client family name",
+        "text": "What is the client's family name?"
+      }
+    ]
+  }
+}

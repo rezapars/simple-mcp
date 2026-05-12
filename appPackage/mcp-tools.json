@@ -1,0 +1,41 @@
+{
+  "tools": [
+    {
+      "name": "get_client_onboarding_status",
+      "description": "Get the onboarding status for a client by client ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "description": "Client identifier, for example 123.",
+            "minLength": 1
+          }
+        },
+        "required": ["client_id"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "get_client_basic_info",
+      "description": "Get a client's basic name or family value by client ID.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "client_id": {
+            "type": "string",
+            "description": "Client identifier, for example 123.",
+            "minLength": 1
+          },
+          "field": {
+            "type": "string",
+            "description": "Basic info field to retrieve.",
+            "enum": ["name", "family"]
+          }
+        },
+        "required": ["client_id", "field"],
+        "additionalProperties": false
+      }
+    }
+  ]
+}

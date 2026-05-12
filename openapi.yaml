@@ -1,0 +1,203 @@
+openapi: 3.1.0
+info:
+  title: Client Onboarding MCP REST API
+  version: 1.0.0
+  description: REST facade for two client onboarding tools exposed by the MCP server.
+servers:
+  - url: http://localhost:8000
+    description: Local development
+  - url: https://example.ngrok-free.app
+    description: Replace with your HTTPS tunnel or hosted endpoint
+tags:
+  - name: client-tools
+    description: Client onboarding tools
+paths:
+  /health:
+    get:
+      operationId: get_health
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Service health
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  service:
+                    type: string
+                  version:
+                    type: string
+                  api_version:
+                    type: string
+                  backend:
+                    type: string
+  /api/v1/clients/{client_id}/onboarding-status:
+    get:
+      operationId: get_client_onboarding_status
+      tags: [client-tools]
+      summary: Get client onboarding status
+      description: Returns the hardcoded onboarding status for a client ID.
+      x-oai-isConsequential: false
+      x-openai-isConsequential: false
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          description: Client identifier, for example 123.
+          schema:
+            type: string
+            minLength: 1
+      responses:
+        "200":
+          description: Client onboarding status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStatusResponse"
+              examples:
+                completed:
+                  value:
+                    client_id: "123"
+                    status: Completed
+                    message: Client onboarding completed successfully
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "503":
+          $ref: "#/components/responses/BackendUnavailable"
+  /api/v1/clients/{client_id}/basic-info/{field}:
+    get:
+      operationId: get_client_basic_info
+      tags: [client-tools]
+      summary: Get client basic info
+      description: Returns the hardcoded name or family value for a client ID.
+      x-oai-isConsequential: false
+      x-openai-isConsequential: false
+      parameters:
+        - name: client_id
+          in: path
+          required: true
+          description: Client identifier, for example 123.
+          schema:
+            type: string
+            minLength: 1
+        - name: field
+          in: path
+          required: true
+          description: Allowed fields are name and family.
+          schema:
+            type: string
+            enum: [name, family]
+      responses:
+        "200":
+          description: Client basic info response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicInfoResponse"
+              examples:
+                name:
+                  value:
+                    client_id: "123"
+                    field: name
+                    value: John
+                family:
+                  value:
+                    client_id: "123"
+                    field: family
+                    value: Doe
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/ValidationError"
+        "503":
+          $ref: "#/components/responses/BackendUnavailable"
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: Placeholder API key authentication. Enable with MCP_AUTH_REQUIRED=true.
+  schemas:
+    OnboardingStatusResponse:
+      type: object
+      required: [client_id, status, message]
+      properties:
+        client_id:
+          type: string
+          examples: ["123"]
+        status:
+          type: string
+          examples: [Completed]
+        message:
+          type: string
+          examples: [Client onboarding completed successfully]
+    BasicInfoResponse:
+      type: object
+      required: [client_id, field, value]
+      properties:
+        client_id:
+          type: string
+          examples: ["123"]
+        field:
+          type: string
+          enum: [name, family]
+        value:
+          type: string
+          examples: [John]
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type:
+                - object
+                - array
+                - string
+                - "null"
+  responses:
+    Unauthorized:
+      description: Missing or invalid API key.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+          example:
+            error:
+              code: unauthorized
+              message: Missing or invalid x-api-key header.
+    ValidationError:
+      description: Request validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+          example:
+            error:
+              code: validation_error
+              message: Request validation failed.
+              details: []
+    BackendUnavailable:
+      description: Mock backend is unavailable.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+          example:
+            error:
+              code: backend_unavailable
+              message: Mock backend server is not reachable.
