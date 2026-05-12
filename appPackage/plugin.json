@@ -80,7 +80,7 @@
         "get_client_basic_info"
       ],
       "spec": {
-        "url": "https://example.ngrok-free.app/mcp",
+        "url": "https://simple-mcp-production-5bc1.up.railway.app/mcp",
         "mcp_tool_description": {
           "tools": [
             {
