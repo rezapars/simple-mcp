@@ -1,0 +1,38 @@
+{
+  "client_id": "123",
+  "client_name": "John Doe",
+  "outreach_count": 2,
+  "questions_to_answer_count": 5,
+  "reasons": [
+    "Annual facility review",
+    "Updated cash-flow forecast"
+  ],
+  "highlights": [
+    "2026-04-22 via KYC: Annual facility review; 3 questions to answer.",
+    "2026-05-03 via CRTM: Updated cash-flow forecast; 2 questions to answer."
+  ],
+  "summary": "John Doe has 2 outreach items. Reasons: Annual facility review, Updated cash-flow forecast. You should answer 5 questions in total.",
+  "outreaches": [
+    {
+      "outreach_id": "out-123-001",
+      "date": "2026-04-22",
+      "channel": "KYC",
+      "reason": "Annual facility review",
+      "questions_to_answer": [
+        "Can you confirm the latest audited revenue?",
+        "Do you expect the current facility usage to increase next quarter?",
+        "Should the facility maturity date remain unchanged?"
+      ]
+    },
+    {
+      "outreach_id": "out-123-002",
+      "date": "2026-05-03",
+      "channel": "CRTM",
+      "reason": "Updated cash-flow forecast",
+      "questions_to_answer": [
+        "Can you provide the revised 12-month cash-flow forecast?",
+        "Are there any expected covenant changes?"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "client_id": "123",
+  "client_name": "John Doe",
+  "facility_limit_eur": 75000000,
+  "currency": "EUR",
+  "formatted_limit": "EUR 75,000,000"
+}
