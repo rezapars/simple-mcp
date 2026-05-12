@@ -13,10 +13,6 @@
       "name": "get_client_onboarding_status",
       "description": "Returns the onboarding status and message for a client ID.",
       "capabilities": {
-        "confirmation": {
-          "type": "None",
-          "isNonConsequential": true
-        },
         "security_info": {
           "data_handling": ["GetPrivateData"]
         }
@@ -26,10 +22,6 @@
       "name": "get_client_basic_info",
       "description": "Returns either the name or family value for a client ID.",
       "capabilities": {
-        "confirmation": {
-          "type": "None",
-          "isNonConsequential": true
-        },
         "security_info": {
           "data_handling": ["GetPrivateData"]
         }

@@ -27,10 +27,6 @@
         "description": "A JSON object with client_id, status, and message."
       },
       "capabilities": {
-        "confirmation": {
-          "type": "None",
-          "isNonConsequential": true
-        },
         "security_info": {
           "data_handling": ["GetPrivateData"]
         }
@@ -59,10 +55,6 @@
         "description": "A JSON object with client_id, field, and value."
       },
       "capabilities": {
-        "confirmation": {
-          "type": "None",
-          "isNonConsequential": true
-        },
         "security_info": {
           "data_handling": ["GetPrivateData"]
         }
