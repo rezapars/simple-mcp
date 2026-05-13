@@ -2,7 +2,7 @@
 
 Minimal Python 3.12 project with:
 
-- MCP server with four tools
+- MCP server with client-session authentication and five tools
 - Separate mock backend server
 - REST/OpenAPI facade
 - Microsoft 365 Copilot plugin package files
@@ -46,6 +46,9 @@ Architecture:
 |   `-- responses/
 |       |-- basic_info_family.json
 |       |-- basic_info_name.json
+|       |-- auth_failed.json
+|       |-- auth_required.json
+|       |-- auth_success.json
 |       |-- error_invalid_field.json
 |       |-- facility_limit.json
 |       |-- onboarding_status.json
@@ -63,6 +66,7 @@ Architecture:
 |   |-- mcp_app.py
 |   |-- models.py
 |   |-- routes.py
+|   |-- session.py
 |   `-- tool_registry.py
 |-- mock_backend/
 |   |-- __init__.py
@@ -90,16 +94,46 @@ Architecture:
 
 ## Tools
 
-The MCP exposes these four tools.
+The MCP exposes these five tools.
+
+### authenticate_client
+
+Input:
+
+```json
+{
+  "client_id": "123",
+  "otp": "9632"
+}
+```
+
+Successful output:
+
+```json
+{
+  "authenticated": true,
+  "client_id": "123",
+  "message": "Authentication successful"
+}
+```
+
+Failed output:
+
+```json
+{
+  "authenticated": false,
+  "message": "Invalid OTP"
+}
+```
+
+Business tools use the authenticated `client_id` stored in the MCP session. For local HTTP tests, keep the same `x-mcp-session-id` header across calls.
 
 ### get_client_onboarding_status
 
 Input:
 
 ```json
-{
-  "client_id": "123"
-}
+{}
 ```
 
 Output:
@@ -118,7 +152,6 @@ Input:
 
 ```json
 {
-  "client_id": "123",
   "field": "name"
 }
 ```
@@ -151,9 +184,7 @@ Output:
 Input:
 
 ```json
-{
-  "client_id": "123"
-}
+{}
 ```
 
 Output:
@@ -173,9 +204,7 @@ Output:
 Input:
 
 ```json
-{
-  "client_id": "123"
-}
+{}
 ```
 
 Output includes the outreach reasons, highlights, and total questions to answer:
@@ -232,6 +261,14 @@ OpenAPI 3.1 schema:
 Endpoints:
 
 ```bash
+curl -X POST http://localhost:8000/api/v1/authenticate \
+  -H "Content-Type: application/json" \
+  -H "x-mcp-session-id: demo-session" \
+  -d '{"client_id":"123","otp":"9632"}'
+curl http://localhost:8000/api/v1/client/onboarding-status -H "x-mcp-session-id: demo-session"
+curl http://localhost:8000/api/v1/client/basic-info/name -H "x-mcp-session-id: demo-session"
+curl http://localhost:8000/api/v1/client/facility -H "x-mcp-session-id: demo-session"
+curl http://localhost:8000/api/v1/client/outreach-summary -H "x-mcp-session-id: demo-session"
 curl http://localhost:8000/api/v1/clients/123/onboarding-status
 curl http://localhost:8000/api/v1/clients/123/basic-info/name
 curl http://localhost:8000/api/v1/clients/123/basic-info/family
@@ -246,15 +283,26 @@ List tools:
 ```bash
 curl -X POST http://localhost:8000/mcp ^
   -H "Content-Type: application/json" ^
+  -H "x-mcp-session-id: demo-session" ^
   -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/list\"}"
 ```
 
-Call tool:
+Authenticate first:
 
 ```bash
 curl -X POST http://localhost:8000/mcp ^
   -H "Content-Type: application/json" ^
-  -d "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"get_client_onboarding_status\",\"arguments\":{\"client_id\":\"123\"}}}"
+  -H "x-mcp-session-id: demo-session" ^
+  -d "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"authenticate_client\",\"arguments\":{\"client_id\":\"123\",\"otp\":\"9632\"}}}"
+```
+
+Then call business tools with the same session ID and no `client_id` argument:
+
+```bash
+curl -X POST http://localhost:8000/mcp ^
+  -H "Content-Type: application/json" ^
+  -H "x-mcp-session-id: demo-session" ^
+  -d "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"get_client_onboarding_status\",\"arguments\":{}}}"
 ```
 
 The MCP Python SDK registration is in `mcp_server/mcp_app.py`. For stdio-style MCP testing:
@@ -275,9 +323,35 @@ curl http://localhost:8001/facility/123
 curl http://localhost:8001/outreach/123/summary
 ```
 
-## Authentication Placeholder
+## MCP Client Session Authentication
 
-Authentication is intentionally disabled for local development.
+MCP client-session authentication is enabled in the tool flow:
+
+- Tool: `authenticate_client`
+- Required input: `client_id`, `otp`
+- Demo OTP: `9632`
+- Storage: in-memory only
+- Session key: `x-mcp-session-id` or `mcp-session-id` header for HTTP tests
+
+If a business tool is called before authentication, the MCP tool returns:
+
+```json
+{
+  "error": "AUTH_REQUIRED",
+  "message": "Please authenticate first using client_id and OTP"
+}
+```
+
+Production replacement points are marked in [session.py](C:/Users/shoja/PycharmProjects/MCP/mcp_server/session.py):
+
+- Replace the hardcoded OTP with real OTP validation.
+- Load client/user mappings from a database.
+- Bind session IDs to Microsoft Entra ID or Teams user identity.
+- Store sessions in Redis or another shared session store.
+
+## API Key Placeholder
+
+API key validation is intentionally disabled for local development. This is separate from the MCP client-session authentication tool.
 
 Enable API key validation:
 
@@ -326,18 +400,18 @@ Package files are in `appPackage/`.
 Before packaging:
 
 1. Replace the hosted domain in `appPackage/plugin.json`, `appPackage/openapi.yaml`, and `appPackage/manifest.json` if you move away from the current Railway URL.
-2. Replace the GUIDs in `appPackage/manifest.json` with real Microsoft Entra app and bot registration IDs.
+2. Replace the app ID in `appPackage/manifest.json` with a real package ID before production publishing.
 3. Zip the contents of `appPackage/`, not the folder itself.
 4. Upload the zip in Teams Developer Portal or Microsoft 365 Agents Toolkit.
 
 Example Copilot prompts:
 
-- Get onboarding status for client 123
+- Authenticate client 123 with OTP 9632
+- Get my onboarding status
 - What is the client's name?
 - What is the client's family name?
-- For client 123, get the family field
-- What is the current limit on my company's facility for client 123?
-- Summarize the outreach highlights for client 123
+- What is the current limit on my company's facility?
+- Summarize my outreach highlights
 
 ## Teams Local Testing
 
@@ -350,12 +424,10 @@ ngrok http 8000
 
 3. Copy the HTTPS ngrok domain, for example `https://abc123.ngrok-free.app`.
 4. Replace the hosted domain in `appPackage/manifest.json`, `appPackage/plugin.json`, and `appPackage/openapi.yaml`.
-5. In Microsoft Entra ID, create or reuse an app registration for the Teams bot placeholder.
-6. In Azure Bot Service or Bot Framework registration, set the messaging endpoint to your bot endpoint if you add a real Teams bot implementation.
-7. In Teams Developer Portal, import the app package zip.
-8. Validate the manifest and test in a personal scope first.
+5. In Teams Developer Portal, import the app package zip.
+6. Validate the manifest and test in a personal scope first.
 
-This project includes bot manifest placeholders but does not implement a Bot Framework message handler. Copilot calls the MCP server/plugin action; the bot block is present for Teams app packaging and future Teams conversational extensions.
+This project is packaged as a Copilot declarative agent. It does not implement a Bot Framework message handler.
 
 ## Error Handling Examples
 
@@ -387,7 +459,6 @@ Invalid MCP tool call:
   "params": {
     "name": "get_client_basic_info",
     "arguments": {
-      "client_id": "123",
       "field": "age"
     }
   }
@@ -452,4 +523,4 @@ Recommended evolution:
 
 - Microsoft 365 Copilot plugins support REST APIs and MCP servers through declarative agent actions.
 - Current Microsoft plugin manifest schema version used here: `v2.4`.
-- Current Microsoft 365 app manifest schema used here: `v1.27`.
+- Current Microsoft 365 app manifest schema used here: `v1.22`.

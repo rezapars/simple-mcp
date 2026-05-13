@@ -14,6 +14,7 @@ from mcp_server.errors import ToolExecutionError
 from mcp_server.jsonrpc import _error_response, handle_json_rpc_payload
 from mcp_server.logging_config import RequestLoggingMiddleware, configure_logging
 from mcp_server.routes import router
+from mcp_server.session import SessionStore, resolve_session_id
 from mcp_server.tool_registry import list_tools
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -30,6 +31,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             settings.backend_base_url,
             settings.request_timeout_seconds,
         )
+        app.state.session_store = getattr(app.state, "session_store", SessionStore())
         yield
         await app.state.backend_client.close()
 
@@ -42,6 +44,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(APIKeyAuthMiddleware, settings=settings)
+    app.state.session_store = SessionStore()
     app.include_router(router)
 
     @app.exception_handler(ToolExecutionError)
@@ -104,7 +107,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             payload = await request.json()
         except json.JSONDecodeError:
             return JSONResponse(status_code=400, content=_error_response(None, -32700, "Parse error"))
-        result = await handle_json_rpc_payload(payload, request.app.state.backend_client)
+        session_id = resolve_session_id(dict(request.headers))
+        result = await handle_json_rpc_payload(
+            payload,
+            request.app.state.backend_client,
+            request.app.state.session_store,
+            session_id,
+        )
         return JSONResponse(content=result)
 
     @app.get("/openapi.yaml", include_in_schema=False)

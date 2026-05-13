@@ -5,19 +5,33 @@ from fastapi.encoders import jsonable_encoder
 
 from mcp_server.backend_client import BackendClient
 from mcp_server.errors import ToolExecutionError
+from mcp_server.session import SessionStore
 from mcp_server.tool_registry import call_tool, list_tools
 
 JSONRPC_VERSION = "2.0"
 MCP_PROTOCOL_VERSION = "2025-06-18"
 
 
-async def handle_json_rpc_payload(payload: Any, backend_client: BackendClient) -> Any:
+async def handle_json_rpc_payload(
+    payload: Any,
+    backend_client: BackendClient,
+    session_store: SessionStore,
+    session_id: str,
+) -> Any:
     if isinstance(payload, list):
-        return [await _handle_single_request(item, backend_client) for item in payload]
-    return await _handle_single_request(payload, backend_client)
+        return [
+            await _handle_single_request(item, backend_client, session_store, session_id)
+            for item in payload
+        ]
+    return await _handle_single_request(payload, backend_client, session_store, session_id)
 
 
-async def _handle_single_request(payload: Any, backend_client: BackendClient) -> dict[str, Any]:
+async def _handle_single_request(
+    payload: Any,
+    backend_client: BackendClient,
+    session_store: SessionStore,
+    session_id: str,
+) -> dict[str, Any]:
     if not isinstance(payload, dict):
         return _error_response(None, -32600, "Invalid Request")
 
@@ -36,7 +50,7 @@ async def _handle_single_request(payload: Any, backend_client: BackendClient) ->
         elif method == "tools/list":
             result = {"tools": list_tools()}
         elif method == "tools/call":
-            result = await _handle_tool_call(params, backend_client)
+            result = await _handle_tool_call(params, backend_client, session_store, session_id)
         else:
             return _error_response(request_id, -32601, f"Method not found: {method}", jsonrpc_mode)
     except ToolExecutionError as exc:
@@ -61,7 +75,12 @@ async def _handle_single_request(payload: Any, backend_client: BackendClient) ->
     return jsonable_encoder(result)
 
 
-async def _handle_tool_call(params: dict[str, Any], backend_client: BackendClient) -> dict[str, Any]:
+async def _handle_tool_call(
+    params: dict[str, Any],
+    backend_client: BackendClient,
+    session_store: SessionStore,
+    session_id: str,
+) -> dict[str, Any]:
     if not isinstance(params, dict):
         raise ToolExecutionError("invalid_arguments", "params must be an object.")
 
@@ -72,7 +91,7 @@ async def _handle_tool_call(params: dict[str, Any], backend_client: BackendClien
     if not isinstance(arguments, dict):
         raise ToolExecutionError("invalid_arguments", "params.arguments must be an object.")
 
-    structured = await call_tool(name, arguments, backend_client)
+    structured = await call_tool(name, arguments, backend_client, session_store, session_id)
     return {
         "content": [{"type": "text", "text": json.dumps(structured)}],
         "structuredContent": structured,

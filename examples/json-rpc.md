@@ -28,7 +28,7 @@ List tools:
 }
 ```
 
-Call `get_client_onboarding_status`:
+Call `get_client_onboarding_status` before authentication:
 
 ```json
 {
@@ -37,9 +37,38 @@ Call `get_client_onboarding_status`:
   "method": "tools/call",
   "params": {
     "name": "get_client_onboarding_status",
+    "arguments": {}
+  }
+}
+```
+
+Call `authenticate_client`:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 4,
+  "method": "tools/call",
+  "params": {
+    "name": "authenticate_client",
     "arguments": {
-      "client_id": "123"
+      "client_id": "123",
+      "otp": "9632"
     }
+  }
+}
+```
+
+Call `get_client_onboarding_status`:
+
+```json
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "tools/call",
+  "params": {
+    "name": "get_client_onboarding_status",
+    "arguments": {}
   }
 }
 ```
@@ -49,12 +78,11 @@ Call `get_client_basic_info`:
 ```json
 {
   "jsonrpc": "2.0",
-  "id": 4,
+  "id": 6,
   "method": "tools/call",
   "params": {
     "name": "get_client_basic_info",
     "arguments": {
-      "client_id": "123",
       "field": "family"
     }
   }
@@ -66,13 +94,11 @@ Call `get_client_facility_limit`:
 ```json
 {
   "jsonrpc": "2.0",
-  "id": 5,
+  "id": 7,
   "method": "tools/call",
   "params": {
     "name": "get_client_facility_limit",
-    "arguments": {
-      "client_id": "123"
-    }
+    "arguments": {}
   }
 }
 ```
@@ -82,13 +108,11 @@ Call `summarize_client_outreach`:
 ```json
 {
   "jsonrpc": "2.0",
-  "id": 6,
+  "id": 8,
   "method": "tools/call",
   "params": {
     "name": "summarize_client_outreach",
-    "arguments": {
-      "client_id": "123"
-    }
+    "arguments": {}
   }
 }
 ```

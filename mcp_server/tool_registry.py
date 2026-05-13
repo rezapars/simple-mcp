@@ -7,33 +7,19 @@ from pydantic import ValidationError
 from mcp_server.backend_client import BackendClient
 from mcp_server.errors import BackendClientError, ToolExecutionError
 from mcp_server.models import (
+    AuthenticationArguments,
     BasicInfoArguments,
     ClientFacilityArguments,
     OnboardingStatusArguments,
     OutreachSummaryArguments,
 )
+from mcp_server.session import AUTH_REQUIRED_RESPONSE, SessionStore
 
 
 TOOLS: list[dict[str, Any]] = [
     {
-        "name": "get_client_onboarding_status",
-        "description": "Get the onboarding status for a client by client ID.",
-        "inputSchema": {
-            "type": "object",
-            "properties": {
-                "client_id": {
-                    "type": "string",
-                    "description": "Client identifier, for example 123.",
-                    "minLength": 1,
-                }
-            },
-            "required": ["client_id"],
-            "additionalProperties": False,
-        },
-    },
-    {
-        "name": "get_client_basic_info",
-        "description": "Get a client's basic name or family value by client ID.",
+        "name": "authenticate_client",
+        "description": "Authenticate a client session using client ID and OTP before using client-specific tools.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -42,6 +28,32 @@ TOOLS: list[dict[str, Any]] = [
                     "description": "Client identifier, for example 123.",
                     "minLength": 1,
                 },
+                "otp": {
+                    "type": "string",
+                    "description": "One-time passcode. Local demo OTP is 9632.",
+                    "minLength": 1,
+                },
+            },
+            "required": ["client_id", "otp"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "get_client_onboarding_status",
+        "description": "Get the onboarding status for the authenticated client.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "get_client_basic_info",
+        "description": "Get the authenticated client's basic name or family value.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
                 "field": {
                     "type": "string",
                     "description": "Basic info field to retrieve.",
@@ -54,17 +66,11 @@ TOOLS: list[dict[str, Any]] = [
     },
     {
         "name": "get_client_facility_limit",
-        "description": "Get the current facility limit in EUR and client name for a client ID.",
+        "description": "Get the current facility limit in EUR and client name for the authenticated client.",
         "inputSchema": {
             "type": "object",
-            "properties": {
-                "client_id": {
-                    "type": "string",
-                    "description": "Client identifier, for example 123.",
-                    "minLength": 1,
-                }
-            },
-            "required": ["client_id"],
+            "properties": {},
+            "required": [],
             "additionalProperties": False,
         },
     },
@@ -76,14 +82,8 @@ TOOLS: list[dict[str, Any]] = [
         ),
         "inputSchema": {
             "type": "object",
-            "properties": {
-                "client_id": {
-                    "type": "string",
-                    "description": "Client identifier, for example 123.",
-                    "minLength": 1,
-                }
-            },
-            "required": ["client_id"],
+            "properties": {},
+            "required": [],
             "additionalProperties": False,
         },
     },
@@ -98,28 +98,38 @@ async def call_tool(
     name: str,
     arguments: dict[str, Any] | None,
     backend_client: BackendClient,
+    session_store: SessionStore,
+    session_id: str,
 ) -> dict[str, Any]:
     arguments = arguments or {}
 
     try:
+        if name == "authenticate_client":
+            parsed = AuthenticationArguments.model_validate(arguments)
+            return session_store.authenticate(session_id, parsed.client_id, parsed.otp)
+
+        client_id = session_store.get_client_id(session_id)
+        if client_id is None:
+            return AUTH_REQUIRED_RESPONSE
+
         if name == "get_client_onboarding_status":
-            parsed = OnboardingStatusArguments.model_validate(arguments)
-            result = await backend_client.get_status(parsed.client_id)
+            OnboardingStatusArguments.model_validate(arguments)
+            result = await backend_client.get_status(client_id)
             return result.model_dump(mode="json")
 
         if name == "get_client_basic_info":
             parsed = BasicInfoArguments.model_validate(arguments)
-            result = await backend_client.get_basic_info(parsed.client_id, parsed.field)
+            result = await backend_client.get_basic_info(client_id, parsed.field)
             return result.model_dump(mode="json")
 
         if name == "get_client_facility_limit":
-            parsed = ClientFacilityArguments.model_validate(arguments)
-            result = await backend_client.get_client_facility(parsed.client_id)
+            ClientFacilityArguments.model_validate(arguments)
+            result = await backend_client.get_client_facility(client_id)
             return result.model_dump(mode="json")
 
         if name == "summarize_client_outreach":
-            parsed = OutreachSummaryArguments.model_validate(arguments)
-            result = await backend_client.summarize_client_outreach(parsed.client_id)
+            OutreachSummaryArguments.model_validate(arguments)
+            result = await backend_client.summarize_client_outreach(client_id)
             return result.model_dump(mode="json")
 
     except ValidationError as exc:

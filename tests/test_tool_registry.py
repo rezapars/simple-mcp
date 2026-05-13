@@ -10,6 +10,7 @@ from mcp_server.models import (
     OutreachSummaryResponse,
 )
 from mcp_server.tool_registry import call_tool, list_tools
+from mcp_server.session import SessionStore
 
 
 class FakeBackendClient:
@@ -57,6 +58,7 @@ def test_list_tools_exposes_expected_tools():
     tools = list_tools()
 
     assert [tool["name"] for tool in tools] == [
+        "authenticate_client",
         "get_client_onboarding_status",
         "get_client_basic_info",
         "get_client_facility_limit",
@@ -65,17 +67,60 @@ def test_list_tools_exposes_expected_tools():
 
 
 async def test_call_tool_validates_arguments():
+    session_store = SessionStore()
+    session_store.authenticate("test-session", "123", "9632")
     with pytest.raises(ToolExecutionError) as error:
-        await call_tool("get_client_basic_info", {"client_id": "123", "field": "age"}, FakeBackendClient())
+        await call_tool(
+            "get_client_basic_info",
+            {"field": "age"},
+            FakeBackendClient(),
+            session_store,
+            "test-session",
+        )
 
     assert error.value.code == "invalid_arguments"
 
 
-async def test_call_tool_returns_structured_json():
+async def test_call_tool_requires_authentication():
     result = await call_tool(
         "get_client_onboarding_status",
-        {"client_id": "123"},
+        {},
         FakeBackendClient(),
+        SessionStore(),
+        "missing-auth-session",
+    )
+
+    assert result == {
+        "error": "AUTH_REQUIRED",
+        "message": "Please authenticate first using client_id and OTP",
+    }
+
+
+async def test_authenticate_client_tool():
+    result = await call_tool(
+        "authenticate_client",
+        {"client_id": "123", "otp": "9632"},
+        FakeBackendClient(),
+        SessionStore(),
+        "auth-session",
+    )
+
+    assert result == {
+        "authenticated": True,
+        "client_id": "123",
+        "message": "Authentication successful",
+    }
+
+
+async def test_call_tool_returns_structured_json():
+    session_store = SessionStore()
+    session_store.authenticate("test-session", "123", "9632")
+    result = await call_tool(
+        "get_client_onboarding_status",
+        {},
+        FakeBackendClient(),
+        session_store,
+        "test-session",
     )
 
     assert result == {
@@ -86,10 +131,14 @@ async def test_call_tool_returns_structured_json():
 
 
 async def test_call_facility_tool_returns_limit_and_name():
+    session_store = SessionStore()
+    session_store.authenticate("test-session", "123", "9632")
     result = await call_tool(
         "get_client_facility_limit",
-        {"client_id": "123"},
+        {},
         FakeBackendClient(),
+        session_store,
+        "test-session",
     )
 
     assert result == {
@@ -102,10 +151,14 @@ async def test_call_facility_tool_returns_limit_and_name():
 
 
 async def test_call_outreach_tool_returns_summary():
+    session_store = SessionStore()
+    session_store.authenticate("test-session", "123", "9632")
     result = await call_tool(
         "summarize_client_outreach",
-        {"client_id": "123"},
+        {},
         FakeBackendClient(),
+        session_store,
+        "test-session",
     )
 
     assert result["client_name"] == "John Doe"

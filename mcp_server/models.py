@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class BasicInfoField(StrEnum):
@@ -9,21 +9,37 @@ class BasicInfoField(StrEnum):
     family = "family"
 
 
-class OnboardingStatusArguments(BaseModel):
+class EmptyArguments(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class AuthenticationArguments(BaseModel):
     client_id: str = Field(..., min_length=1, examples=["123"])
+    otp: str = Field(..., min_length=1, examples=["9632"])
+
+
+class AuthenticationResponse(BaseModel):
+    authenticated: bool = Field(..., examples=[True])
+    client_id: str | None = Field(default=None, examples=["123"])
+    message: str = Field(..., examples=["Authentication successful"])
+
+
+class OnboardingStatusArguments(EmptyArguments):
+    pass
 
 
 class BasicInfoArguments(BaseModel):
-    client_id: str = Field(..., min_length=1, examples=["123"])
+    model_config = ConfigDict(extra="forbid")
+
     field: BasicInfoField = Field(..., description="Allowed values are name or family.")
 
 
-class ClientFacilityArguments(BaseModel):
-    client_id: str = Field(..., min_length=1, examples=["123"])
+class ClientFacilityArguments(EmptyArguments):
+    pass
 
 
-class OutreachSummaryArguments(BaseModel):
-    client_id: str = Field(..., min_length=1, examples=["123"])
+class OutreachSummaryArguments(EmptyArguments):
+    pass
 
 
 class OnboardingStatusResponse(BaseModel):

@@ -1,16 +1,18 @@
 openapi: 3.1.0
 info:
-  title: Client Onboarding MCP REST API
-  version: 1.0.0
-  description: REST facade for client onboarding, basic info, facility limit, and outreach tools exposed by the MCP server.
+  title: Rabo Client Assistant REST API
+  version: 1.0.3
+  description: REST facade for session authentication and client tools exposed by the MCP server.
 servers:
   - url: http://localhost:8000
     description: Local development
-  - url: https://example.ngrok-free.app
-    description: Replace with your HTTPS tunnel or hosted endpoint
+  - url: https://simple-mcp-production-5bc1.up.railway.app
+    description: Hosted Railway endpoint
 tags:
+  - name: authentication
+    description: Session authentication
   - name: client-tools
-    description: Client onboarding tools
+    description: Authenticated client tools
 paths:
   /health:
     get:
@@ -24,33 +26,52 @@ paths:
             application/json:
               schema:
                 type: object
-                properties:
-                  status:
-                    type: string
-                  service:
-                    type: string
-                  version:
-                    type: string
-                  api_version:
-                    type: string
-                  backend:
-                    type: string
-  /api/v1/clients/{client_id}/onboarding-status:
-    get:
-      operationId: get_client_onboarding_status
-      tags: [client-tools]
-      summary: Get client onboarding status
-      description: Returns the hardcoded onboarding status for a client ID.
+  /api/v1/authenticate:
+    post:
+      operationId: authenticate_client
+      tags: [authentication]
+      summary: Authenticate client session
+      description: Authenticates the current in-memory session using client ID and OTP. The demo OTP is 9632.
       x-oai-isConsequential: false
       x-openai-isConsequential: false
       parameters:
-        - name: client_id
-          in: path
-          required: true
-          description: Client identifier, for example 123.
-          schema:
-            type: string
-            minLength: 1
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthenticationRequest"
+            example:
+              client_id: "123"
+              otp: "9632"
+      responses:
+        "200":
+          description: Authentication result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticationResponse"
+              examples:
+                success:
+                  value:
+                    authenticated: true
+                    client_id: "123"
+                    message: Authentication successful
+                failure:
+                  value:
+                    authenticated: false
+                    message: Invalid OTP
+  /api/v1/client/onboarding-status:
+    get:
+      operationId: get_client_onboarding_status
+      tags: [client-tools]
+      summary: Get authenticated client onboarding status
+      description: Returns onboarding status for the authenticated client in the current session.
+      x-oai-isConsequential: false
+      x-openai-isConsequential: false
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
       responses:
         "200":
           description: Client onboarding status
@@ -58,81 +79,43 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OnboardingStatusResponse"
-              examples:
-                completed:
-                  value:
-                    client_id: "123"
-                    status: Completed
-                    message: Client onboarding completed successfully
         "401":
-          $ref: "#/components/responses/Unauthorized"
-        "422":
-          $ref: "#/components/responses/ValidationError"
-        "503":
-          $ref: "#/components/responses/BackendUnavailable"
-  /api/v1/clients/{client_id}/basic-info/{field}:
+          $ref: "#/components/responses/AuthRequired"
+  /api/v1/client/basic-info/{field}:
     get:
       operationId: get_client_basic_info
       tags: [client-tools]
-      summary: Get client basic info
-      description: Returns the hardcoded name or family value for a client ID.
+      summary: Get authenticated client basic info
+      description: Returns the requested basic field for the authenticated client in the current session.
       x-oai-isConsequential: false
       x-openai-isConsequential: false
       parameters:
-        - name: client_id
-          in: path
-          required: true
-          description: Client identifier, for example 123.
-          schema:
-            type: string
-            minLength: 1
+        - $ref: "#/components/parameters/SessionId"
         - name: field
           in: path
           required: true
-          description: Allowed fields are name and family.
           schema:
             type: string
             enum: [name, family]
       responses:
         "200":
-          description: Client basic info response
+          description: Client basic info
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicInfoResponse"
-              examples:
-                name:
-                  value:
-                    client_id: "123"
-                    field: name
-                    value: John
-                family:
-                  value:
-                    client_id: "123"
-                    field: family
-                    value: Doe
         "401":
-          $ref: "#/components/responses/Unauthorized"
-        "422":
-          $ref: "#/components/responses/ValidationError"
-        "503":
-          $ref: "#/components/responses/BackendUnavailable"
-  /api/v1/clients/{client_id}/facility:
+          $ref: "#/components/responses/AuthRequired"
+  /api/v1/client/facility:
     get:
       operationId: get_client_facility_limit
       tags: [client-tools]
-      summary: Get client facility limit
-      description: Returns the client name and current facility limit in EUR for a client ID.
+      summary: Get authenticated client facility limit
+      description: Returns the client name and current facility limit in EUR for the authenticated client.
       x-oai-isConsequential: false
       x-openai-isConsequential: false
       parameters:
-        - name: client_id
-          in: path
-          required: true
-          description: Client identifier, for example 123.
-          schema:
-            type: string
-            minLength: 1
+        - $ref: "#/components/parameters/SessionId"
       responses:
         "200":
           description: Client facility limit
@@ -140,34 +123,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ClientFacilityResponse"
-              example:
-                client_id: "123"
-                client_name: John Doe
-                facility_limit_eur: 75000000
-                currency: EUR
-                formatted_limit: EUR 75,000,000
         "401":
-          $ref: "#/components/responses/Unauthorized"
-        "422":
-          $ref: "#/components/responses/ValidationError"
-        "503":
-          $ref: "#/components/responses/BackendUnavailable"
-  /api/v1/clients/{client_id}/outreach-summary:
+          $ref: "#/components/responses/AuthRequired"
+  /api/v1/client/outreach-summary:
     get:
       operationId: summarize_client_outreach
       tags: [client-tools]
-      summary: Summarize client outreach
-      description: Summarizes outreach reasons, highlights, and the total number of questions that should be answered for a client ID.
+      summary: Summarize authenticated client outreach
+      description: Summarizes outreach reasons, highlights, and questions to answer for the authenticated client.
       x-oai-isConsequential: false
       x-openai-isConsequential: false
       parameters:
-        - name: client_id
-          in: path
-          required: true
-          description: Client identifier, for example 123.
-          schema:
-            type: string
-            minLength: 1
+        - $ref: "#/components/parameters/SessionId"
       responses:
         "200":
           description: Client outreach summary
@@ -176,66 +143,78 @@ paths:
               schema:
                 $ref: "#/components/schemas/OutreachSummaryResponse"
         "401":
-          $ref: "#/components/responses/Unauthorized"
-        "422":
-          $ref: "#/components/responses/ValidationError"
-        "503":
-          $ref: "#/components/responses/BackendUnavailable"
+          $ref: "#/components/responses/AuthRequired"
 components:
-  securitySchemes:
-    ApiKeyAuth:
-      type: apiKey
+  parameters:
+    SessionId:
+      name: x-mcp-session-id
       in: header
-      name: x-api-key
-      description: Placeholder API key authentication. Enable with MCP_AUTH_REQUIRED=true.
+      required: false
+      description: Session key for local REST testing. Production should bind this to Microsoft Entra ID or Teams identity.
+      schema:
+        type: string
+        examples: ["demo-session"]
   schemas:
+    AuthenticationRequest:
+      type: object
+      required: [client_id, otp]
+      properties:
+        client_id:
+          type: string
+          examples: ["123"]
+        otp:
+          type: string
+          examples: ["9632"]
+    AuthenticationResponse:
+      type: object
+      required: [authenticated, message]
+      properties:
+        authenticated:
+          type: boolean
+        client_id:
+          type:
+            - string
+            - "null"
+          examples: ["123"]
+        message:
+          type: string
     OnboardingStatusResponse:
       type: object
       required: [client_id, status, message]
       properties:
         client_id:
           type: string
-          examples: ["123"]
         status:
           type: string
-          examples: [Completed]
         message:
           type: string
-          examples: [Client onboarding completed successfully]
     BasicInfoResponse:
       type: object
       required: [client_id, field, value]
       properties:
         client_id:
           type: string
-          examples: ["123"]
         field:
           type: string
           enum: [name, family]
         value:
           type: string
-          examples: [John]
     ClientFacilityResponse:
       type: object
       required: [client_id, client_name, facility_limit_eur, currency, formatted_limit]
       properties:
         client_id:
           type: string
-          examples: ["123"]
         client_name:
           type: string
-          examples: [John Doe]
         facility_limit_eur:
           type: integer
           minimum: 1000000
           maximum: 200000000
-          examples: [75000000]
         currency:
           type: string
-          examples: [EUR]
         formatted_limit:
           type: string
-          examples: ["EUR 75,000,000"]
     OutreachItem:
       type: object
       required: [outreach_id, date, channel, reason, questions_to_answer]
@@ -254,28 +233,16 @@ components:
             type: string
     OutreachSummaryResponse:
       type: object
-      required:
-        - client_id
-        - client_name
-        - outreach_count
-        - questions_to_answer_count
-        - reasons
-        - highlights
-        - summary
-        - outreaches
+      required: [client_id, client_name, outreach_count, questions_to_answer_count, reasons, highlights, summary, outreaches]
       properties:
         client_id:
           type: string
-          examples: ["123"]
         client_name:
           type: string
-          examples: [John Doe]
         outreach_count:
           type: integer
-          examples: [2]
         questions_to_answer_count:
           type: integer
-          examples: [5]
         reasons:
           type: array
           items:
@@ -290,53 +257,23 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/OutreachItem"
-    ErrorEnvelope:
+    AuthRequiredResponse:
       type: object
-      required: [error]
+      required: [error, message]
       properties:
         error:
-          type: object
-          required: [code, message]
-          properties:
-            code:
-              type: string
-            message:
-              type: string
-            details:
-              type:
-                - object
-                - array
-                - string
-                - "null"
+          type: string
+          examples: [AUTH_REQUIRED]
+        message:
+          type: string
+          examples: [Please authenticate first using client_id and OTP]
   responses:
-    Unauthorized:
-      description: Missing or invalid API key.
+    AuthRequired:
+      description: Session is not authenticated.
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/ErrorEnvelope"
+            $ref: "#/components/schemas/AuthRequiredResponse"
           example:
-            error:
-              code: unauthorized
-              message: Missing or invalid x-api-key header.
-    ValidationError:
-      description: Request validation failed.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorEnvelope"
-          example:
-            error:
-              code: validation_error
-              message: Request validation failed.
-              details: []
-    BackendUnavailable:
-      description: Mock backend is unavailable.
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorEnvelope"
-          example:
-            error:
-              code: backend_unavailable
-              message: Mock backend server is not reachable.
+            error: AUTH_REQUIRED
+            message: Please authenticate first using client_id and OTP

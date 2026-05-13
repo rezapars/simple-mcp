@@ -39,6 +39,45 @@ async def test_rest_outreach_summary(mcp_client):
     assert "You should answer 3 questions" in body["summary"]
 
 
+async def test_rest_session_authentication_flow(mcp_client):
+    unauthenticated = await mcp_client.get(
+        "/api/v1/client/onboarding-status",
+        headers={"x-mcp-session-id": "rest-session"},
+    )
+    assert unauthenticated.status_code == 401
+    assert unauthenticated.json() == {
+        "error": "AUTH_REQUIRED",
+        "message": "Please authenticate first using client_id and OTP",
+    }
+
+    failed_auth = await mcp_client.post(
+        "/api/v1/authenticate",
+        headers={"x-mcp-session-id": "rest-session"},
+        json={"client_id": "123", "otp": "0000"},
+    )
+    assert failed_auth.status_code == 200
+    assert failed_auth.json() == {"authenticated": False, "message": "Invalid OTP"}
+
+    authenticated = await mcp_client.post(
+        "/api/v1/authenticate",
+        headers={"x-mcp-session-id": "rest-session"},
+        json={"client_id": "123", "otp": "9632"},
+    )
+    assert authenticated.status_code == 200
+    assert authenticated.json() == {
+        "authenticated": True,
+        "client_id": "123",
+        "message": "Authentication successful",
+    }
+
+    status = await mcp_client.get(
+        "/api/v1/client/onboarding-status",
+        headers={"x-mcp-session-id": "rest-session"},
+    )
+    assert status.status_code == 200
+    assert status.json()["client_id"] == "123"
+
+
 async def test_mcp_tools_list(mcp_client):
     response = await mcp_client.post(
         "/mcp",
@@ -48,8 +87,8 @@ async def test_mcp_tools_list(mcp_client):
     assert response.status_code == 200
     body = response.json()
     assert body["jsonrpc"] == "2.0"
-    assert body["result"]["tools"][0]["name"] == "get_client_onboarding_status"
     assert [tool["name"] for tool in body["result"]["tools"]] == [
+        "authenticate_client",
         "get_client_onboarding_status",
         "get_client_basic_info",
         "get_client_facility_limit",
@@ -57,16 +96,100 @@ async def test_mcp_tools_list(mcp_client):
     ]
 
 
-async def test_mcp_tool_call(mcp_client):
+async def test_mcp_tool_call_requires_authentication(mcp_client):
     response = await mcp_client.post(
         "/mcp",
+        headers={"x-mcp-session-id": "unauthenticated-session"},
+        json={
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": "get_client_onboarding_status",
+                "arguments": {},
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["result"]["structuredContent"] == {
+        "error": "AUTH_REQUIRED",
+        "message": "Please authenticate first using client_id and OTP",
+    }
+
+
+async def test_mcp_authenticate_client_invalid_otp(mcp_client):
+    response = await mcp_client.post(
+        "/mcp",
+        headers={"x-mcp-session-id": "bad-otp-session"},
+        json={
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": "authenticate_client",
+                "arguments": {"client_id": "123", "otp": "0000"},
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["result"]["structuredContent"] == {
+        "authenticated": False,
+        "message": "Invalid OTP",
+    }
+
+
+async def test_mcp_authenticate_client_success(mcp_client):
+    response = await mcp_client.post(
+        "/mcp",
+        headers={"x-mcp-session-id": "auth-session"},
+        json={
+            "jsonrpc": "2.0",
+            "id": 2,
+            "method": "tools/call",
+            "params": {
+                "name": "authenticate_client",
+                "arguments": {"client_id": "123", "otp": "9632"},
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["result"]["structuredContent"] == {
+        "authenticated": True,
+        "client_id": "123",
+        "message": "Authentication successful",
+    }
+
+
+async def test_mcp_tool_call(mcp_client):
+    await mcp_client.post(
+        "/mcp",
+        headers={"x-mcp-session-id": "basic-info-session"},
+        json={
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": "authenticate_client",
+                "arguments": {"client_id": "123", "otp": "9632"},
+            },
+        },
+    )
+    response = await mcp_client.post(
+        "/mcp",
+        headers={"x-mcp-session-id": "basic-info-session"},
         json={
             "jsonrpc": "2.0",
             "id": 2,
             "method": "tools/call",
             "params": {
                 "name": "get_client_basic_info",
-                "arguments": {"client_id": "123", "field": "name"},
+                "arguments": {"field": "name"},
             },
         },
     )
@@ -81,15 +204,29 @@ async def test_mcp_tool_call(mcp_client):
 
 
 async def test_mcp_tool_call_invalid_field(mcp_client):
+    await mcp_client.post(
+        "/mcp",
+        headers={"x-mcp-session-id": "invalid-field-session"},
+        json={
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": "authenticate_client",
+                "arguments": {"client_id": "123", "otp": "9632"},
+            },
+        },
+    )
     response = await mcp_client.post(
         "/mcp",
+        headers={"x-mcp-session-id": "invalid-field-session"},
         json={
             "jsonrpc": "2.0",
             "id": 3,
             "method": "tools/call",
             "params": {
                 "name": "get_client_basic_info",
-                "arguments": {"client_id": "123", "field": "age"},
+                "arguments": {"field": "age"},
             },
         },
     )
@@ -101,15 +238,29 @@ async def test_mcp_tool_call_invalid_field(mcp_client):
 
 
 async def test_mcp_facility_tool_call(mcp_client):
+    await mcp_client.post(
+        "/mcp",
+        headers={"x-mcp-session-id": "facility-session"},
+        json={
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": "authenticate_client",
+                "arguments": {"client_id": "123", "otp": "9632"},
+            },
+        },
+    )
     response = await mcp_client.post(
         "/mcp",
+        headers={"x-mcp-session-id": "facility-session"},
         json={
             "jsonrpc": "2.0",
             "id": 4,
             "method": "tools/call",
             "params": {
                 "name": "get_client_facility_limit",
-                "arguments": {"client_id": "123"},
+                "arguments": {},
             },
         },
     )
@@ -121,15 +272,29 @@ async def test_mcp_facility_tool_call(mcp_client):
 
 
 async def test_mcp_outreach_tool_call(mcp_client):
+    await mcp_client.post(
+        "/mcp",
+        headers={"x-mcp-session-id": "outreach-session"},
+        json={
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "tools/call",
+            "params": {
+                "name": "authenticate_client",
+                "arguments": {"client_id": "123", "otp": "9632"},
+            },
+        },
+    )
     response = await mcp_client.post(
         "/mcp",
+        headers={"x-mcp-session-id": "outreach-session"},
         json={
             "jsonrpc": "2.0",
             "id": 5,
             "method": "tools/call",
             "params": {
                 "name": "summarize_client_outreach",
-                "arguments": {"client_id": "123"},
+                "arguments": {},
             },
         },
     )

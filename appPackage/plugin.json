@@ -3,28 +3,50 @@
   "schema_version": "v2.4",
   "name_for_human": "Rabo Client Assistant",
   "namespace": "RaboClientAssistant",
-  "description_for_human": "Get client onboarding, facility limit, and outreach details.",
-  "description_for_model": "Use this plugin when the user asks for a client's onboarding status, first name, family name, current facility limit, or outreach highlights. The user must provide a client ID. Use only the tool response data and do not invent client information.",
+  "description_for_human": "Authenticate clients and get onboarding, facility, and outreach details.",
+  "description_for_model": "Use this plugin for Rabo client-specific answers. Before answering client-specific questions, call authenticate_client with the client_id and OTP if the user is not already authenticated in the session. After authentication succeeds, call business tools without client_id because the MCP server uses the authenticated session client. Do not invent client data.",
   "contact_email": "support@example.com",
   "privacy_policy_url": "https://example.com/privacy",
   "legal_info_url": "https://example.com/terms",
   "functions": [
     {
-      "name": "get_client_onboarding_status",
-      "description": "Returns the onboarding status and message for a client ID.",
+      "name": "authenticate_client",
+      "description": "Authenticates the client session using client ID and OTP.",
       "parameters": {
         "type": "object",
         "properties": {
           "client_id": {
             "type": "string",
             "description": "Client identifier, for example 123."
+          },
+          "otp": {
+            "type": "string",
+            "description": "One-time passcode. Local demo OTP is 9632."
           }
         },
-        "required": ["client_id"]
+        "required": ["client_id", "otp"]
       },
       "returns": {
         "type": "string",
-        "description": "A JSON object with client_id, status, and message."
+        "description": "A JSON object with authenticated, client_id when successful, and message."
+      },
+      "capabilities": {
+        "security_info": {
+          "data_handling": ["GetPrivateData"]
+        }
+      }
+    },
+    {
+      "name": "get_client_onboarding_status",
+      "description": "Returns onboarding status for the authenticated client.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      },
+      "returns": {
+        "type": "string",
+        "description": "A JSON object with client_id, status, and message, or AUTH_REQUIRED if not authenticated."
       },
       "capabilities": {
         "security_info": {
@@ -34,25 +56,21 @@
     },
     {
       "name": "get_client_basic_info",
-      "description": "Returns either the name or family value for a client ID.",
+      "description": "Returns either the name or family value for the authenticated client.",
       "parameters": {
         "type": "object",
         "properties": {
-          "client_id": {
-            "type": "string",
-            "description": "Client identifier, for example 123."
-          },
           "field": {
             "type": "string",
             "description": "The basic info field to retrieve.",
             "enum": ["name", "family"]
           }
         },
-        "required": ["client_id", "field"]
+        "required": ["field"]
       },
       "returns": {
         "type": "string",
-        "description": "A JSON object with client_id, field, and value."
+        "description": "A JSON object with client_id, field, and value, or AUTH_REQUIRED if not authenticated."
       },
       "capabilities": {
         "security_info": {
@@ -62,16 +80,11 @@
     },
     {
       "name": "get_client_facility_limit",
-      "description": "Returns the client's name and current facility limit in EUR.",
+      "description": "Returns the authenticated client's name and current facility limit in EUR.",
       "parameters": {
         "type": "object",
-        "properties": {
-          "client_id": {
-            "type": "string",
-            "description": "Client identifier, for example 123."
-          }
-        },
-        "required": ["client_id"]
+        "properties": {},
+        "required": []
       },
       "returns": {
         "type": "string",
@@ -85,16 +98,11 @@
     },
     {
       "name": "summarize_client_outreach",
-      "description": "Returns outreach highlights for a client, including reasons and total questions to answer.",
+      "description": "Returns outreach highlights for the authenticated client, including reasons and total questions to answer.",
       "parameters": {
         "type": "object",
-        "properties": {
-          "client_id": {
-            "type": "string",
-            "description": "Client identifier, for example 123."
-          }
-        },
-        "required": ["client_id"]
+        "properties": {},
+        "required": []
       },
       "returns": {
         "type": "string",
@@ -114,6 +122,7 @@
         "type": "None"
       },
       "run_for_functions": [
+        "authenticate_client",
         "get_client_onboarding_status",
         "get_client_basic_info",
         "get_client_facility_limit",
@@ -124,24 +133,8 @@
         "mcp_tool_description": {
           "tools": [
             {
-              "name": "get_client_onboarding_status",
-              "description": "Get the onboarding status for a client by client ID.",
-              "inputSchema": {
-                "type": "object",
-                "properties": {
-                  "client_id": {
-                    "type": "string",
-                    "description": "Client identifier, for example 123.",
-                    "minLength": 1
-                  }
-                },
-                "required": ["client_id"],
-                "additionalProperties": false
-              }
-            },
-            {
-              "name": "get_client_basic_info",
-              "description": "Get a client's basic name or family value by client ID.",
+              "name": "authenticate_client",
+              "description": "Authenticate a client session using client ID and OTP before using client-specific tools.",
               "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -150,45 +143,59 @@
                     "description": "Client identifier, for example 123.",
                     "minLength": 1
                   },
+                  "otp": {
+                    "type": "string",
+                    "description": "One-time passcode. Local demo OTP is 9632.",
+                    "minLength": 1
+                  }
+                },
+                "required": ["client_id", "otp"],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "get_client_onboarding_status",
+              "description": "Get the onboarding status for the authenticated client.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {},
+                "required": [],
+                "additionalProperties": false
+              }
+            },
+            {
+              "name": "get_client_basic_info",
+              "description": "Get the authenticated client's basic name or family value.",
+              "inputSchema": {
+                "type": "object",
+                "properties": {
                   "field": {
                     "type": "string",
                     "description": "Basic info field to retrieve.",
                     "enum": ["name", "family"]
                   }
                 },
-                "required": ["client_id", "field"],
+                "required": ["field"],
                 "additionalProperties": false
               }
             },
             {
               "name": "get_client_facility_limit",
-              "description": "Get the current facility limit in EUR and client name for a client ID.",
+              "description": "Get the current facility limit in EUR and client name for the authenticated client.",
               "inputSchema": {
                 "type": "object",
-                "properties": {
-                  "client_id": {
-                    "type": "string",
-                    "description": "Client identifier, for example 123.",
-                    "minLength": 1
-                  }
-                },
-                "required": ["client_id"],
+                "properties": {},
+                "required": [],
                 "additionalProperties": false
               }
             },
             {
               "name": "summarize_client_outreach",
-              "description": "Summarize outreach highlights for a client, including outreach reasons and how many questions should be answered.",
+              "description": "Summarize outreach highlights for the authenticated client, including outreach reasons and how many questions should be answered.",
               "inputSchema": {
                 "type": "object",
-                "properties": {
-                  "client_id": {
-                    "type": "string",
-                    "description": "Client identifier, for example 123.",
-                    "minLength": 1
-                  }
-                },
-                "required": ["client_id"],
+                "properties": {},
+                "required": [],
                 "additionalProperties": false
               }
             }
@@ -200,24 +207,20 @@
   "capabilities": {
     "conversation_starters": [
       {
+        "title": "Authenticate",
+        "text": "Authenticate client 123 with OTP 9632"
+      },
+      {
         "title": "Onboarding status",
-        "text": "Get onboarding status for client 123"
-      },
-      {
-        "title": "Client name",
-        "text": "What is the client's name?"
-      },
-      {
-        "title": "Client family name",
-        "text": "What is the client's family name?"
+        "text": "Get my onboarding status"
       },
       {
         "title": "Facility limit",
-        "text": "What is the current limit on my company's facility for client 123?"
+        "text": "What is the current limit on my company's facility?"
       },
       {
         "title": "Outreach highlights",
-        "text": "Summarize the outreach highlights for client 123"
+        "text": "Summarize my outreach highlights"
       }
     ]
   }

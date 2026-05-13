@@ -4,6 +4,32 @@ GET http://localhost:8000/health
 ### Tool metadata
 GET http://localhost:8000/api/v1/tools
 
+### REST authentication
+POST http://localhost:8000/api/v1/authenticate
+Content-Type: application/json
+x-mcp-session-id: demo-session
+
+{
+  "client_id": "123",
+  "otp": "9632"
+}
+
+### REST authenticated onboarding status
+GET http://localhost:8000/api/v1/client/onboarding-status
+x-mcp-session-id: demo-session
+
+### REST authenticated basic info
+GET http://localhost:8000/api/v1/client/basic-info/name
+x-mcp-session-id: demo-session
+
+### REST authenticated facility limit
+GET http://localhost:8000/api/v1/client/facility
+x-mcp-session-id: demo-session
+
+### REST authenticated outreach summary
+GET http://localhost:8000/api/v1/client/outreach-summary
+x-mcp-session-id: demo-session
+
 ### REST tool 1
 GET http://localhost:8000/api/v1/clients/123/onboarding-status
 
@@ -22,6 +48,7 @@ GET http://localhost:8000/api/v1/clients/123/outreach-summary
 ### MCP tools/list
 POST http://localhost:8000/mcp
 Content-Type: application/json
+x-mcp-session-id: demo-session
 
 {
   "jsonrpc": "2.0",
@@ -29,18 +56,51 @@ Content-Type: application/json
   "method": "tools/list"
 }
 
-### MCP tools/call
+### MCP tools/call before authentication
 POST http://localhost:8000/mcp
 Content-Type: application/json
+x-mcp-session-id: new-session
 
 {
   "jsonrpc": "2.0",
   "id": 2,
   "method": "tools/call",
   "params": {
-    "name": "get_client_basic_info",
+    "name": "get_client_onboarding_status",
+    "arguments": {}
+  }
+}
+
+### MCP authenticate_client
+POST http://localhost:8000/mcp
+Content-Type: application/json
+x-mcp-session-id: demo-session
+
+{
+  "jsonrpc": "2.0",
+  "id": 2,
+  "method": "tools/call",
+  "params": {
+    "name": "authenticate_client",
     "arguments": {
       "client_id": "123",
+      "otp": "9632"
+    }
+  }
+}
+
+### MCP tools/call - basic info after authentication
+POST http://localhost:8000/mcp
+Content-Type: application/json
+x-mcp-session-id: demo-session
+
+{
+  "jsonrpc": "2.0",
+  "id": 3,
+  "method": "tools/call",
+  "params": {
+    "name": "get_client_basic_info",
+    "arguments": {
       "field": "name"
     }
   }
@@ -49,31 +109,29 @@ Content-Type: application/json
 ### MCP tools/call - facility limit
 POST http://localhost:8000/mcp
 Content-Type: application/json
-
-{
-  "jsonrpc": "2.0",
-  "id": 3,
-  "method": "tools/call",
-  "params": {
-    "name": "get_client_facility_limit",
-    "arguments": {
-      "client_id": "123"
-    }
-  }
-}
-
-### MCP tools/call - outreach summary
-POST http://localhost:8000/mcp
-Content-Type: application/json
+x-mcp-session-id: demo-session
 
 {
   "jsonrpc": "2.0",
   "id": 4,
   "method": "tools/call",
   "params": {
+    "name": "get_client_facility_limit",
+    "arguments": {}
+  }
+}
+
+### MCP tools/call - outreach summary
+POST http://localhost:8000/mcp
+Content-Type: application/json
+x-mcp-session-id: demo-session
+
+{
+  "jsonrpc": "2.0",
+  "id": 5,
+  "method": "tools/call",
+  "params": {
     "name": "summarize_client_outreach",
-    "arguments": {
-      "client_id": "123"
-    }
+    "arguments": {}
   }
 }

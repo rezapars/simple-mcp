@@ -3,15 +3,24 @@
   "schema_version": "v2.4",
   "name_for_human": "Rabo Client Assistant",
   "namespace": "RaboClientAssistantRest",
-  "description_for_human": "Get client onboarding, facility limit, and outreach details.",
-  "description_for_model": "REST/OpenAPI fallback plugin for retrieving client onboarding status, first name, family name, current facility limit, and outreach summary by client ID. Use only API response data.",
+  "description_for_human": "Authenticate clients and get onboarding, facility, and outreach details.",
+  "description_for_model": "REST/OpenAPI fallback plugin for Rabo client-specific answers. First call authenticate_client with client_id and OTP. After authentication succeeds, call business functions without client_id because the server uses the authenticated session context.",
   "contact_email": "support@example.com",
   "privacy_policy_url": "https://example.com/privacy",
   "legal_info_url": "https://example.com/terms",
   "functions": [
     {
+      "name": "authenticate_client",
+      "description": "Authenticates the client session using client ID and OTP.",
+      "capabilities": {
+        "security_info": {
+          "data_handling": ["GetPrivateData"]
+        }
+      }
+    },
+    {
       "name": "get_client_onboarding_status",
-      "description": "Returns the onboarding status and message for a client ID.",
+      "description": "Returns onboarding status for the authenticated client.",
       "capabilities": {
         "security_info": {
           "data_handling": ["GetPrivateData"]
@@ -20,7 +29,7 @@
     },
     {
       "name": "get_client_basic_info",
-      "description": "Returns either the name or family value for a client ID.",
+      "description": "Returns either the name or family value for the authenticated client.",
       "capabilities": {
         "security_info": {
           "data_handling": ["GetPrivateData"]
@@ -29,7 +38,7 @@
     },
     {
       "name": "get_client_facility_limit",
-      "description": "Returns the client's name and current facility limit in EUR.",
+      "description": "Returns the authenticated client's name and current facility limit in EUR.",
       "capabilities": {
         "security_info": {
           "data_handling": ["GetPrivateData"]
@@ -38,7 +47,7 @@
     },
     {
       "name": "summarize_client_outreach",
-      "description": "Returns outreach highlights for a client, including reasons and total questions to answer.",
+      "description": "Returns outreach highlights for the authenticated client, including reasons and total questions to answer.",
       "capabilities": {
         "security_info": {
           "data_handling": ["GetPrivateData"]
@@ -53,6 +62,7 @@
         "type": "None"
       },
       "run_for_functions": [
+        "authenticate_client",
         "get_client_onboarding_status",
         "get_client_basic_info",
         "get_client_facility_limit",

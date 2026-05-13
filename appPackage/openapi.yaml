@@ -1,24 +1,39 @@
 openapi: 3.1.0
 info:
-  title: Client Onboarding MCP REST API
-  version: 1.0.0
-  description: REST facade for client onboarding, basic info, facility limit, and outreach tools exposed by the MCP server.
+  title: Rabo Client Assistant REST API
+  version: 1.0.3
+  description: REST fallback for session authentication and client tools exposed by the MCP server.
 servers:
-  - url: https://example.ngrok-free.app
-    description: Replace with your HTTPS tunnel or hosted endpoint
+  - url: https://simple-mcp-production-5bc1.up.railway.app
+    description: Hosted Railway endpoint
 paths:
-  /api/v1/clients/{client_id}/onboarding-status:
-    get:
-      operationId: get_client_onboarding_status
-      summary: Get client onboarding status
+  /api/v1/authenticate:
+    post:
+      operationId: authenticate_client
+      summary: Authenticate client session
       x-oai-isConsequential: false
       parameters:
-        - name: client_id
-          in: path
-          required: true
-          schema:
-            type: string
-            minLength: 1
+        - $ref: "#/components/parameters/SessionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthenticationRequest"
+      responses:
+        "200":
+          description: Authentication result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticationResponse"
+  /api/v1/client/onboarding-status:
+    get:
+      operationId: get_client_onboarding_status
+      summary: Get authenticated client onboarding status
+      x-oai-isConsequential: false
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
       responses:
         "200":
           description: Client onboarding status
@@ -26,18 +41,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OnboardingStatusResponse"
-  /api/v1/clients/{client_id}/basic-info/{field}:
+  /api/v1/client/basic-info/{field}:
     get:
       operationId: get_client_basic_info
-      summary: Get client basic info
+      summary: Get authenticated client basic info
       x-oai-isConsequential: false
       parameters:
-        - name: client_id
-          in: path
-          required: true
-          schema:
-            type: string
-            minLength: 1
+        - $ref: "#/components/parameters/SessionId"
         - name: field
           in: path
           required: true
@@ -51,18 +61,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BasicInfoResponse"
-  /api/v1/clients/{client_id}/facility:
+  /api/v1/client/facility:
     get:
       operationId: get_client_facility_limit
-      summary: Get client facility limit
+      summary: Get authenticated client facility limit
       x-oai-isConsequential: false
       parameters:
-        - name: client_id
-          in: path
-          required: true
-          schema:
-            type: string
-            minLength: 1
+        - $ref: "#/components/parameters/SessionId"
       responses:
         "200":
           description: Client facility limit
@@ -70,18 +75,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ClientFacilityResponse"
-  /api/v1/clients/{client_id}/outreach-summary:
+  /api/v1/client/outreach-summary:
     get:
       operationId: summarize_client_outreach
-      summary: Summarize client outreach
+      summary: Summarize authenticated client outreach
       x-oai-isConsequential: false
       parameters:
-        - name: client_id
-          in: path
-          required: true
-          schema:
-            type: string
-            minLength: 1
+        - $ref: "#/components/parameters/SessionId"
       responses:
         "200":
           description: Client outreach summary
@@ -90,7 +90,34 @@ paths:
               schema:
                 $ref: "#/components/schemas/OutreachSummaryResponse"
 components:
+  parameters:
+    SessionId:
+      name: x-mcp-session-id
+      in: header
+      required: false
+      schema:
+        type: string
   schemas:
+    AuthenticationRequest:
+      type: object
+      required: [client_id, otp]
+      properties:
+        client_id:
+          type: string
+        otp:
+          type: string
+    AuthenticationResponse:
+      type: object
+      required: [authenticated, message]
+      properties:
+        authenticated:
+          type: boolean
+        client_id:
+          type:
+            - string
+            - "null"
+        message:
+          type: string
     OnboardingStatusResponse:
       type: object
       required: [client_id, status, message]
@@ -122,8 +149,6 @@ components:
           type: string
         facility_limit_eur:
           type: integer
-          minimum: 1000000
-          maximum: 200000000
         currency:
           type: string
         formatted_limit:
