@@ -1,0 +1,4 @@
+{
+  "error": "AUTH_REQUIRED",
+  "message": "Please authenticate first using client_id and OTP"
+}
